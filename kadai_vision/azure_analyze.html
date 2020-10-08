@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="Vision.css">
+    <title>Azure Computer Vision</title>
+</head>
+<body>
+<div id="mskey">    
+Subscription key: 
+<input type="text" name="subscriptionKey" id="subscriptionKey"
+    value="" /> 
+Endpoint URL:
+<input type="text" name="endpointUrl" id="endpointUrl"
+    value="" />
+<P>※一度更新をかけないとうまく解析してくれない場合があります</P>    
+</div>
+
+<h1 id="ms_h1">Computer Visionは電気羊の夢を見るか</h1>
+<p id="ms_p">セレクトは独断と偏見で自分(はくの)の好きなものと興味深い反応が見えたものから選べるようになっています</p>
+
+<!-- 帰ってくる解析結果がつまんないのでセレクトに変更 -->
+<div class="button dropdown">
+<select name="inputImage" id="inputImage">
+    <option value=""hidden>Choose</option>    
+    <option value="https://upload.wikimedia.org/wikipedia/commons/3/3c/Shaki_waterfall.jpg">滝(sample)</option>
+    <option value="https://amd.c.yimg.jp/amd/20200926-00081286-crankinn-000-4-view.jpg">ガッキー</option>
+    <option value="https://furusato.manetatsu.com/wp-content/uploads/2018/10/pixta_30758459_M.jpg">いくら</option>
+    <option value="https://yougakumap.com/wp-content/uploads/the-beatles-3.jpg">ビートルズ</option>
+    <option value="https://i.ytimg.com/vi/i2bgbQqq6YY/maxresdefault.jpg">ゴジラ</option>
+    <option value="https://pdmagazine.jp/wp-content/uploads/2016/11/NY%E3%81%A7%E3%81%AE%E4%B8%AD%E4%B8%8A-305x224.jpg">中上健次</option>
+    <option value="hhttps://blog-imgs-34.fc2.com/a/r/t/artprogramkt/IMG_0005_convert_20091116224605_convert_20091117013235.jpg">マーク・ロスコ</option>
+    <option value="https://www.gstatic.com/tv/thumb/persons/509314/509314_v9_ba.jpg">ウィリアム・キャンベル</option>
+</select>
+</div>
+
+<button id="ms_button" onclick="processImage()">画像を解析する</button>
+
+<P id="text"></P>
+
+<!-- デフォルトはインプット -->
+<!-- <input type="text" name="inputImage" id="inputImage"
+    value="https://upload.wikimedia.org/wikipedia/commons/3/3c/Shaki_waterfall.jpg" /> -->
+
+
+<!-- レスポンス部分 -->
+<div id="wrapper" style="width:1020px; display:table;">
+    <div id="jsonOutput" style="width:600px; display:table-cell;">
+        <p id="res_p">Response</p>
+        <br><br>
+        <textarea id="responseTextArea" class="UIInput"
+                  style="width:580px; height:400px;"></textarea>
+    </div>
+    <div id="imageDiv" style="width:420px; display:table-cell;">
+        <p id="res_p">Source image</p>
+        <br><br>
+        <img id="sourceImage" width="400" />
+        <br><br>
+    </div>
+    
+</div>
+
+
+<!-- 画像クリックで解析 -->
+<!-- <div>
+    <img onclick="processImage()" id="inputImage" src="https://image.jimcdn.com/app/cms/image/transf/dimension=4000x3000:format=png/path/s093251349da78e77/image/i615612b4aa580388/version/1589743454/image.png"ゔぁ="https://image.jimcdn.com/app/cms/image/transf/dimension=4000x3000:format=png/path/s093251349da78e77/image/i615612b4aa580388/version/1589743454/image.png" alt="" width="100">
+</div> -->
+
+
+<script type="text/javascript">
+    function processImage() {
+        // **********************************************
+        // *** Update or verify the following values. ***
+        // **********************************************
+
+        var subscriptionKey = document.getElementById("subscriptionKey").value;
+        var endpoint = document.getElementById("endpointUrl").value;
+        var uriBase = endpoint + "vision/v3.0/analyze";
+
+        // Request parameters.---日本語に変更----
+        var params = {
+            "visualFeatures": "Categories,Description,Color,Tags,Faces,ImageType",
+            "details": "",
+            "language": "ja",
+        };
+
+        // Display the image.-----解説を入れるとうまく表示されなくなってしまった。。----
+        let sourceImageUrl = document.getElementById("inputImage").value;
+        document.querySelector("#sourceImage").src = sourceImageUrl;
+
+        // Make the REST API call.
+        $.ajax({
+            url: uriBase + "?" + $.param(params),
+
+            // Request headers.
+            beforeSend: function(xhrObj){
+                xhrObj.setRequestHeader("Content-Type","application/json");
+                xhrObj.setRequestHeader(
+                    "Ocp-Apim-Subscription-Key", subscriptionKey);
+            },
+
+            type: "POST",
+
+            // Request body.
+            data: '{"url": ' + '"' + sourceImageUrl + '"}',
+        })
+
+        .done(function(data) {
+            // Show formatted JSON on webpage.
+            $("#responseTextArea").val(JSON.stringify(data, null, 2));
+            
+        })
+        
+        .fail(function(jqXHR, textStatus, errorThrown) {
+            // Display error message.
+            var errorString = (errorThrown === "") ? "Error. " :
+                errorThrown + " (" + jqXHR.status + "): ";
+            errorString += (jqXHR.responseText === "") ? "" :
+                jQuery.parseJSON(jqXHR.responseText).message;
+            alert(errorString);
+        });
+    };
+
+    // これを表示させると画像が表示されなくなってしまうのでとりあえずコメントアウトする--- 
+    //画像解析の注釈をつける----- 
+    // document.getElementById("ms_button").onclick = function(){
+    //     let inputImage = document.getElementById("inputImage");
+    //     let i = inputImage.selectedIndex;
+    //     // let s_value = inputImage.options[i].value;
+    //     console.log(i);
+    //     let com ='';
+
+    //     switch(i){
+    //         case 1:
+    //         com = "aaaaa"
+    //         break;
+    //         case 2:
+    //         com = "bbbbb"
+    //         break;
+    //         case 3:
+    //         com = "ccccc"
+    //         break;
+    //         case 4:
+    //         com = "ddddd"
+    //         break;
+    //         case 5:
+    //         com = "eeeee"
+    //         break;
+    //         case 6:
+    //         com = "fffff"
+    //         break;
+    //         case 7:
+    //         com = "ggggg"
+    //         break;
+    //         case 8:
+    //         com = "hhhhh"
+
+    //     }
+
+    //     // if(i = 1){
+    //     //     // alert("Ok");
+    //     //     com="aaaaa";
+    //     // }
+
+    //     document.getElementById("text").innerHTML = com; 
+        
+    // };
+
+
+
+    
+
+</script>
+</body>
+</html>
